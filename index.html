@@ -92,30 +92,39 @@ async function checkSession(session){
 async function loadPackages(){
   const list = $("packageList");
   list.textContent = "लोड हो रहा है...";
+
   const {data:packages,error} = await sb.from("packages")
     .select("*").order("sort_order").order("created_at");
 
-  if(error){list.textContent="Packages लोड नहीं हुए।";return;}
-  if(!packages || packages.length===0){
-    list.textContent="अभी कोई Package उपलब्ध नहीं है।";
+  if(error){
+    list.textContent = "Packages लोड नहीं हुए।";
     return;
   }
 
-  list.innerHTML = "";
+  if(!packages || packages.length===0){
+    list.textContent = "अभी कोई Package उपलब्ध नहीं है।";
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+
   for(const p of packages){
     const {data:photos} = await sb.from("package_photos")
       .select("*").eq("package_id",p.id).order("sort_order");
 
+    const card = document.createElement("article");
+    card.className = "card";
+
     const photoHTML = (photos || []).map(ph => {
-      const url = sb.storage.from("package-photos").getPublicUrl(ph.storage_path).data.publicUrl;
+      const url = sb.storage.from("package-photos")
+        .getPublicUrl(ph.storage_path).data.publicUrl;
+
       return `<div>
         <img src="${esc(url)}" alt="Mehandi photo">
         ${isAdmin ? `<button class="secondary" data-action="deletePhoto" data-id="${ph.id}">फोटो हटाएँ</button>` : ""}
       </div>`;
     }).join("");
 
-    const card = document.createElement("article");
-    card.className = "card";
     card.innerHTML = `
       <h3>${esc(p.name)}</h3>
       <h3>₹${esc(p.price)}</h3>
@@ -130,8 +139,12 @@ async function loadPackages(){
         <input type="file" accept="image/jpeg,image/png,image/webp" data-upload="${p.id}"></p>
       ` : ""}
     `;
-    list.appendChild(card);
+
+    fragment.appendChild(card);
   }
+
+  list.replaceChildren(fragment);
+  
 }
 
 $("loginForm").addEventListener("submit",async e=>{
