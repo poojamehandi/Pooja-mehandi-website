@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pooja Mehandi</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#fff8f3;color:#38251e}
+header{text-align:center;background:#713d35;color:white;padding:25px 12px}
+h1{margin:0 0 8px}
+main{max-width:900px;margin:auto;padding:16px}
+.panel{background:white;padding:16px;border-radius:12px;margin:16px 0}
+input,button{padding:11px;margin:5px 0;border:1px solid #c9aaa0;border-radius:7px;font-size:15px}
+input{max-width:100%;box-sizing:border-box}
+button{background:#713d35;color:white;cursor:pointer;border:0}
+button.secondary{background:#806b63}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.card{background:white;border-radius:12px;padding:12px;box-shadow:0 2px 8px #0001}
+.card img{width:100%;height:190px;object-fit:cover;border-radius:8px}
+.photos{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.photos img{height:130px}
+.small{font-size:13px;color:#765f56}
+a{color:#ffe2c8}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<header>
+<h1>Pooja Mehandi</h1>
+<p>Beautiful Mehandi Designs & Packages</p>
+<a href="https://www.instagram.com/pooja_mehandi_11.11/" target="_blank">Instagram पर Booking करें</a>
+</header>
+
+<main>
+<section id="loginPanel" class="panel">
+<h2>Admin Login</h2>
+<form id="loginForm">
+<input id="email" type="email" placeholder="Email" required><br>
+<input id="password" type="password" placeholder="Password" required><br>
+<button type="submit">Login</button>
+</form>
+<p class="small">केवल Admin यहाँ लॉगिन करें।</p>
+</section>
+
+<section id="adminPanel" class="panel hidden">
+<h2>Admin Panel</h2>
+<button id="logoutBtn" class="secondary">Logout</button>
+<h3>नया Package जोड़ें</h3>
+<form id="addForm">
+<input id="packageName" placeholder="Package का नाम" required><br>
+<input id="packagePrice" type="number" min="0" step="0.01" placeholder="Price (₹)" required><br>
+<button type="submit">Package जोड़ें</button>
+</form>
+<p class="small">Package जोड़ने के बाद नीचे उसकी फोटो अपलोड कर सकते हैं।</p>
+</section>
+
+<p id="message"></p>
+<h2>Our Packages</h2>
+<div id="packageList" class="grid">लोड हो रहा है...</div>
+</main>
+
+<script>
+// इन दोनों जगह बाद में अपनी Supabase जानकारी भरनी है।
+const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+const SUPABASE_KEY = "YOUR_SUPABASE_PUBLISHABLE_KEY";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let isAdmin = false;
+
+const $ = id => document.getElementById(id);
+const say = msg => $("message").textContent = msg;
+
+function esc(value){
+  return String(value ?? "").replace(/[&<>"']/g, c =>
+    ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])
+  );
+}
+
+async function checkSession(session){
+  isAdmin = false;
+  if(session){
+    const {data,error} = await sb.rpc("is_site_admin");
+    isAdmin = !error && data === true;
+  }
+  $("loginPanel").classList.toggle("hidden",!!session);
+  $("adminPanel").classList.toggle("hidden",!isAdmin);
+  if(session && !isAdmin) say("इस अकाउंट को Admin की अनुमति नहीं मिली है।");
+  await loadPackages();
+}
+
+async function loadPackages(){
+  const list = $("packageList");
+  list.textContent = "लोड हो रहा है...";
+  const {data:packages,error} = await sb.from("packages")
+    .select("*").order("sort_order").order("created_at");
+
+  if(error){list.textContent="Packages लोड नहीं हुए।";return;}
+  if(!packages || packages.length===0){
+    list.textContent="अभी कोई Package उपलब्ध नहीं है।";
+    return;
+  }
+
+  list.innerHTML = "";
+  for(const p of packages){
+    const {data:photos} = await sb.from("package_photos")
+      .select("*").eq("package_id",p.id).order("sort_order");
+
+    const photoHTML = (photos || []).map(ph => {
+      const url = sb.storage.from("package-photos").getPublicUrl(ph.storage_path).data.publicUrl;
+      return `<div>
+        <img src="${esc(url)}" alt="Mehandi photo">
+        ${isAdmin ? `<button class="secondary" data-action="deletePhoto" data-id="${ph.id}">फोटो हटाएँ</button>` : ""}
+      </div>`;
+    }).join("");
+
+    const card = document.createElement("article");
+    card.className = "card";
+    card.innerHTML = `
+      <h3>${esc(p.name)}</h3>
+      <h3>₹${esc(p.price)}</h3>
+      ${isAdmin ? `<p class="small">${p.is_published ? "Published" : "Hidden"}</p>` : ""}
+      <div class="photos">${photoHTML || "<p>फोटो जल्द जोड़ी जाएगी।</p>"}</div>
+      ${isAdmin ? `
+        <hr>
+        <button data-action="edit" data-id="${p.id}">Edit</button>
+        <button data-action="publish" data-id="${p.id}" data-value="${p.is_published}">${p.is_published ? "Hide" : "Publish"}</button>
+        <button data-action="delete" data-id="${p.id}" class="secondary">Delete</button>
+        <p><label>फोटो अपलोड करें:</label><br>
+        <input type="file" accept="image/jpeg,image/png,image/webp" data-upload="${p.id}"></p>
+      ` : ""}
+    `;
+    list.appendChild(card);
+  }
+}
+
+$("loginForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  say("लॉगिन हो रहा है...");
+  const {data,error} = await sb.auth.signInWithPassword({
+    email:$("email").value,
+    password:$("password").value
+  });
+  if(error){say("Login नहीं हुआ: "+error.message);return;}
+  await checkSession(data.session);
+  say(isAdmin ? "Admin Login सफल हुआ।" : "Admin अनुमति नहीं मिली।");
+});
+
+$("logoutBtn").addEventListener("click",async()=>{
+  await sb.auth.signOut();
+  await checkSession(null);
+  say("Logout हो गया।");
+});
+
+$("addForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const name=$("packageName").value.trim();
+  const price=Number($("packagePrice").value);
+  const {error}=await sb.from("packages").insert({
+    name,price,is_published:true
+  });
+  if(error){say("Package नहीं जुड़ा: "+error.message);return;}
+  $("addForm").reset();
+  say("Package जुड़ गया। अब उसकी फोटो अपलोड कर सकते हैं।");
+  await loadPackages();
+});
+
+$("packageList").addEventListener("click",async e=>{
+  const b=e.target.closest("button[data-action]");
+  if(!b)return;
+  const id=b.dataset.id;
+  const action=b.dataset.action;
+
+  if(action==="edit"){
+    const {data:p}=await sb.from("packages").select("*").eq("id",id).single();
+    if(!p)return;
+    const name=prompt("Package का नया नाम:",p.name);
+    if(name===null)return;
+    const price=prompt("नई Price:",p.price);
+    if(price===null)return;
+    const {error}=await sb.from("packages").update({
+      name:name.trim(),price:Number(price)
+    }).eq("id",id);
+    say(error ? error.message : "Package अपडेट हो गया।");
+  }
+
+  if(action==="publish"){
+    const {error}=await sb.from("packages").update({
+      is_published:b.dataset.value!=="true"
+    }).eq("id",id);
+    say(error ? error.message : "Package की स्थिति बदल गई।");
+  }
+
+  if(action==="delete"){
+    if(!confirm("क्या यह Package हटाना है?"))return;
+    const {data:photos}=await sb.from("package_photos")
+      .select("storage_path").eq("package_id",id);
+    if(photos?.length){
+      await sb.storage.from("package-photos").remove(photos.map(x=>x.storage_path));
+    }
+    const {error}=await sb.from("packages").delete().eq("id",id);
+    say(error ? error.message : "Package हटा दिया गया।");
+  }
+
+  if(action==="deletePhoto"){
+    const {data:ph}=await sb.from("package_photos")
+      .select("storage_path").eq("id",id).single();
+    if(ph){
+      await sb.storage.from("package-photos").remove([ph.storage_path]);
+      const {error}=await sb.from("package_photos").delete().eq("id",id);
+      say(error ? error.message : "फोटो हटा दी गई।");
+    }
+  }
+  await loadPackages();
+});
+
+$("packageList").addEventListener("change",async e=>{
+  const file=e.target.files?.[0];
+  const packageId=e.target.dataset.upload;
+  if(!file || !packageId)return;
+  if(file.size>8*1024*1024){say("फोटो 8 MB से छोटी होनी चाहिए।");return;}
+  if(!["image/jpeg","image/png","image/webp"].includes(file.type)){
+    say("केवल JPG, PNG या WebP फोटो अपलोड करें।");return;
+  }
+
+  say("फोटो अपलोड हो रही है...");
+  const path=packageId+"/"+crypto.randomUUID()+"-"+file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+  const {error:uploadError}=await sb.storage.from("package-photos")
+    .upload(path,file,{contentType:file.type});
+  if(uploadError){say("फोटो अपलोड नहीं हुई: "+uploadError.message);return;}
+
+  const {error}=await sb.from("package_photos").insert({
+    package_id:packageId,storage_path:path
+  });
+  if(error){
+    await sb.storage.from("package-photos").remove([path]);
+    say("फोटो सेव नहीं हुई: "+error.message);
+    return;
+  }
+  say("फोटो अपलोड हो गई।");
+  await loadPackages();
+});
+
+sb.auth.onAuthStateChange((_event,session)=>{
+  setTimeout(()=>checkSession(session),0);
+});
+
+(async()=>{
+  const {data}=await sb.auth.getSession();
+  await checkSession(data.session);
+})();
+</script>
+</body>
+</html>
