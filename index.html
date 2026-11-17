@@ -23,8 +23,49 @@ button.secondary{background:#806b63}
 .small{font-size:13px;color:#765f56}
 a{color:#ffe2c8}
 .hidden{display:none}
+  .photo-viewer{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  background:rgba(0,0,0,.96);
+  align-items:center;
+  justify-content:center;
+  padding:15px;
+}
+.photo-viewer.open{
+  display:flex;
+}
+.photo-viewer img{
+  max-width:100%;
+  max-height:88vh;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+}
+.photo-viewer button{
+  position:absolute;
+  top:15px;
+  background:#fff;
+  color:#222;
+  border:0;
+  border-radius:8px;
+  padding:10px 15px;
+  font-size:20px;
+}
+.photo-viewer .prev{
+  left:12px;
+  top:50%;
+}
+.photo-viewer .next{
+  right:12px;
+  top:50%;
+}
+.photo-viewer .close{
+  right:12px;
+}
 </style>
-</head>
+</head> 
 <body>
 <header>
 <h1>Pooja Mehandi</h1>
@@ -263,5 +304,79 @@ sb.auth.onAuthStateChange((_event,session)=>{
   await checkSession(data.session);
 })();
 </script>
+  <div id="photoViewer" class="photo-viewer">
+  <button class="close" type="button">✕</button>
+  <button class="prev" type="button">❮</button>
+  <img id="viewerImage" src="" alt="Mehandi Design">
+  <button class="next" type="button">❯</button>
+  </div>
+  <script>
+const viewer = document.getElementById("photoViewer");
+const viewerImage = document.getElementById("viewerImage");
+
+let galleryImages = [];
+let currentImage = 0;
+let touchStartX = 0;
+
+function showPhoto(index) {
+  if (!galleryImages.length) return;
+
+  currentImage = (index + galleryImages.length) % galleryImages.length;
+  viewerImage.src = galleryImages[currentImage].src;
+  viewer.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closePhoto() {
+  viewer.classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+function nextPhoto() {
+  showPhoto(currentImage + 1);
+}
+
+function previousPhoto() {
+  showPhoto(currentImage - 1);
+}
+
+document.addEventListener("click", function(e) {
+  const img = e.target.closest(".photos img");
+  if (!img) return;
+
+  galleryImages = [...document.querySelectorAll(".photos img")];
+  currentImage = galleryImages.indexOf(img);
+  showPhoto(currentImage);
+});
+
+viewer.querySelector(".close").addEventListener("click", closePhoto);
+viewer.querySelector(".next").addEventListener("click", nextPhoto);
+viewer.querySelector(".prev").addEventListener("click", previousPhoto);
+
+viewer.addEventListener("click", function(e) {
+  if (e.target === viewer) closePhoto();
+});
+
+viewer.addEventListener("touchstart", function(e) {
+  touchStartX = e.changedTouches[0].screenX;
+}, {passive:true});
+
+viewer.addEventListener("touchend", function(e) {
+  const difference = e.changedTouches[0].screenX - touchStartX;
+
+  if (Math.abs(difference) > 50) {
+    if (difference < 0) nextPhoto();
+    else previousPhoto();
+  }
+}, {passive:true});
+
+document.addEventListener("keydown", function(e) {
+  if (!viewer.classList.contains("open")) return;
+
+  if (e.key === "Escape") closePhoto();
+  if (e.key === "ArrowRight") nextPhoto();
+  if (e.key === "ArrowLeft") previousPhoto();
+});
+        </script>
 </body>
 </html>
