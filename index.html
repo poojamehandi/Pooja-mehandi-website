@@ -339,15 +339,18 @@ function nextPhoto() {
 function previousPhoto() {
   showPhoto(currentImage - 1);
 }
-
 document.addEventListener("click", function(e) {
   const img = e.target.closest(".photos img");
   if (!img) return;
 
-  galleryImages = [...document.querySelectorAll(".photos img")];
+  const card = img.closest(".card");
+  if (!card) return;
+
+  galleryImages = [...card.querySelectorAll(".photos img")];
   currentImage = galleryImages.indexOf(img);
   showPhoto(currentImage);
 });
+
 
 viewer.querySelector(".close").addEventListener("click", closePhoto);
 viewer.querySelector(".next").addEventListener("click", nextPhoto);
