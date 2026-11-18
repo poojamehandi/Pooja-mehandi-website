@@ -242,6 +242,156 @@ a {
     height: 130px;
   }
 }
+  
+/* LUXURY BRIDAL UPGRADE */
+
+body {
+  background: #f8f4e9;
+  color: #17382e;
+  font-family: Georgia, serif;
+}
+
+header {
+  position: relative;
+  padding: 55px 18px 45px;
+  background:
+    radial-gradient(ellipse at top, #28634c 0%, transparent 65%),
+    linear-gradient(135deg, #061e18, #123f30, #061e18);
+  border-bottom: 3px solid #c9a45c;
+  box-shadow: 0 8px 30px #09271f35;
+}
+
+header h1 {
+  font-family: Georgia, serif;
+  font-size: clamp(34px, 7vw, 52px);
+  color: #f0d58d;
+  letter-spacing: 2px;
+  text-shadow: 0 3px 12px #0008;
+}
+
+header p {
+  font-size: 17px;
+  letter-spacing: 1px;
+  color: #f4e8cb;
+}
+
+header a {
+  background: linear-gradient(135deg, #f2d58d, #b68b38);
+  color: #17382e;
+  padding: 14px 27px;
+  border: 1px solid #f8e8b9;
+  border-radius: 30px;
+  box-shadow: 0 5px 16px #0004;
+  font-weight: bold;
+  transition: .25s;
+}
+
+header a:hover {
+  transform: translateY(-3px);
+}
+
+main {
+  max-width: 1100px;
+  padding: 22px;
+}
+
+.panel {
+  border: 1px solid #d9c18a;
+  border-radius: 20px;
+  padding: 23px;
+  background: linear-gradient(145deg, #fffefa, #f5efdf);
+  box-shadow: 0 8px 25px #17382e12;
+}
+
+h2 {
+  color: #174b38;
+  font-family: Georgia, serif;
+  font-size: 25px;
+  letter-spacing: .5px;
+}
+
+.card {
+  border: 1px solid #d8bd7d;
+  border-radius: 18px;
+  padding: 14px;
+  background: #fffdf7;
+  box-shadow: 0 8px 22px #17382e15;
+  transition: transform .25s, box-shadow .25s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 14px 28px #17382e25;
+}
+
+.card img {
+  border-radius: 13px;
+}
+
+button {
+  background: linear-gradient(135deg, #1c6247, #092e23);
+  color: #f5dfa1;
+  border: 1px solid #c9a45c;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-weight: bold;
+  box-shadow: 0 4px 12px #17382e20;
+}
+
+button.secondary {
+  background: linear-gradient(135deg, #d8bd7d, #ae873d);
+  color: #17382e;
+}
+
+input {
+  border: 1px solid #cdbb91;
+  background: #fffefa;
+  border-radius: 10px;
+  padding: 13px;
+}
+
+.photos img {
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform .25s;
+}
+
+.photos img:hover {
+  transform: scale(1.025);
+}
+
+.small {
+  color: #756b54;
+}
+
+.photo-viewer {
+  background: rgba(3, 20, 15, .98);
+}
+
+.photo-viewer button {
+  background: #d7b66b;
+  color: #17382e;
+}
+
+@media (max-width: 600px) {
+  header {
+    padding: 40px 14px;
+  }
+
+  main {
+    padding: 12px;
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    gap: 12px;
+  }
+}
+
 </style>
 </head> 
 <body>
